@@ -1,0 +1,55 @@
+name: AI-Powered Testing Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ai-test-generation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-chromedriver
+
+    - name: Install Python packages
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium pytest coverage openai python-dotenv
+
+    - name: Generate Test Cases with Azure OpenAI
+      id: generate-tests
+      env:
+        AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      run: |
+        python scripts/generate_tests.py
+
+    - name: Run Generated Tests
+      run: |
+        echo "=== Running Generated Tests ==="
+        coverage run -m pytest generated_tests/ -v
+        coverage xml
+      continue-on-error: true
+
+    - name: Upload Coverage Report
+      uses: codecov/codecov-action@v5
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          generated_tests/
+          test-output.log
