@@ -186,6 +186,7 @@ jobs:
               {test_cases}
               ```
               ### Test Execution Results
+              #NEW
               ```
               {test_results}
               ```
